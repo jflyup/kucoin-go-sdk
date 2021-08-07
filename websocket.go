@@ -313,16 +313,16 @@ func (wc *WebSocketClient) keepHeartbeat() {
 			// log.Printf("Ping: %s", ToJsonString(p))
 			// Waiting (with timeout) for the server to response pong message
 			// If timeout, close this connection
-			select {
-			case pid := <-wc.pongs:
-				if pid != p.Id {
-					wc.errors <- errors.Errorf("Invalid pong id %s, expect %s", pid, p.Id)
-					return
-				}
-			case <-time.After(time.Duration(wc.server.PingTimeout) * time.Millisecond):
-				wc.errors <- errors.Errorf("Wait pong message timeout in %d ms", wc.server.PingTimeout)
-				return
-			}
+			// select {
+			// case pid := <-wc.pongs:
+			// 	if pid != p.Id {
+			// 		wc.errors <- errors.Errorf("Invalid pong id %s, expect %s", pid, p.Id)
+			// 		return
+			// 	}
+			// case <-time.After(time.Duration(wc.server.PingTimeout) * time.Millisecond):
+			// 	wc.errors <- errors.Errorf("Wait pong message timeout in %d ms", wc.server.PingTimeout)
+			// 	return
+			// }
 		}
 	}
 }
