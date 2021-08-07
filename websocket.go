@@ -155,7 +155,7 @@ type WebSocketClient struct {
 	enableHeartbeat bool
 	skipVerifyTls   bool
 	timeout         time.Duration
-	pubsub          *util.Pubsub
+	pubsub          *util.PubSub
 }
 
 var defaultTimeout = time.Second * 5
