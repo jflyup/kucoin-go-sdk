@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/jflyup/goup/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -154,6 +155,7 @@ type WebSocketClient struct {
 	enableHeartbeat bool
 	skipVerifyTls   bool
 	timeout         time.Duration
+	pubsub          *util.Pubsub
 }
 
 var defaultTimeout = time.Second * 5
@@ -187,6 +189,7 @@ func (as *ApiService) NewWebSocketClientOpts(opts WebSocketClientOpts) *WebSocke
 		messages:      make(chan *WebSocketDownstreamMessage, 2048),
 		skipVerifyTls: opts.TLSSkipVerify,
 		timeout:       opts.Timeout,
+		pubsub:        util.NewPubSub(16),
 	}
 	return wc
 }
@@ -272,7 +275,7 @@ func (wc *WebSocketClient) read() {
 				}
 			case AckMessage:
 				// log.Printf("Subscribed: %s==%s? %s", channel.Id, m.Id, channel.Topic)
-				wc.acks <- m.Id
+				wc.pubsub.Pub(nil, m.Id)
 			case ErrorMessage:
 				wc.errors <- errors.Errorf("Error message: %s", ToJsonString(m))
 				return
@@ -331,16 +334,15 @@ func (wc *WebSocketClient) Subscribe(channels ...*WebSocketSubscribeMessage) err
 		if DebugMode {
 			logrus.Debugf("Sent a WebSocket message: %s", m)
 		}
+		chAck := wc.pubsub.SubOnce(c.Id)
 		if err := wc.conn.WriteMessage(websocket.TextMessage, []byte(m)); err != nil {
 			return err
 		}
+
 		//log.Printf("Subscribing: %s, %s", c.Id, c.Topic)
 		select {
-		case id := <-wc.acks:
+		case <-chAck:
 			//log.Printf("ack: %s=>%s", id, c.Id)
-			if id != c.Id {
-				return errors.Errorf("Invalid ack id %s, expect %s", id, c.Id)
-			}
 		case err := <-wc.errors:
 			return errors.Errorf("Subscribe failed, %s", err.Error())
 		case <-time.After(wc.timeout):
