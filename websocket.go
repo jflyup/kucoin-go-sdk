@@ -270,9 +270,9 @@ func (wc *WebSocketClient) read() {
 			switch m.Type {
 			case WelcomeMessage:
 			case PongMessage:
-				if wc.enableHeartbeat {
-					wc.pongs <- m.Id
-				}
+				// if wc.enableHeartbeat {
+				// 	wc.pongs <- m.Id
+				// }
 			case AckMessage:
 				// log.Printf("Subscribed: %s==%s? %s", channel.Id, m.Id, channel.Topic)
 				wc.pubsub.Pub(nil, m.Id)
