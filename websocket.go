@@ -149,7 +149,7 @@ type WebSocketClient struct {
 	errors chan error
 	// Downstream message channel
 	messages        chan *WebSocketDownstreamMessage
-	conn            *websocket.Conn
+	Conn            *websocket.Conn
 	token           *WebSocketTokenModel
 	server          *WebSocketServerModel
 	enableHeartbeat bool
@@ -217,7 +217,7 @@ func (wc *WebSocketClient) Connect() (<-chan *WebSocketDownstreamMessage, <-chan
 
 	// Connect ws server
 	websocket.DefaultDialer.ReadBufferSize = 2048000 //2000 kb
-	wc.conn, _, err = websocket.DefaultDialer.Dial(u, nil)
+	wc.Conn, _, err = websocket.DefaultDialer.Dial(u, nil)
 	if err != nil {
 		return wc.messages, wc.errors, err
 	}
@@ -225,7 +225,7 @@ func (wc *WebSocketClient) Connect() (<-chan *WebSocketDownstreamMessage, <-chan
 	// Must read the first welcome message
 	for {
 		m := &WebSocketDownstreamMessage{}
-		if err := wc.conn.ReadJSON(m); err != nil {
+		if err := wc.Conn.ReadJSON(m); err != nil {
 			return wc.messages, wc.errors, err
 		}
 		if DebugMode {
@@ -259,7 +259,7 @@ func (wc *WebSocketClient) read() {
 			return
 		default:
 			m := &WebSocketDownstreamMessage{}
-			if err := wc.conn.ReadJSON(m); err != nil {
+			if err := wc.Conn.ReadJSON(m); err != nil {
 				wc.errors <- err
 				return
 			}
@@ -305,7 +305,7 @@ func (wc *WebSocketClient) keepHeartbeat() {
 			if DebugMode {
 				logrus.Debugf("Sent a WebSocket message: %s", m)
 			}
-			if err := wc.conn.WriteMessage(websocket.TextMessage, []byte(m)); err != nil {
+			if err := wc.Conn.WriteMessage(websocket.TextMessage, []byte(m)); err != nil {
 				wc.errors <- err
 				return
 			}
@@ -335,7 +335,7 @@ func (wc *WebSocketClient) Subscribe(channels ...*WebSocketSubscribeMessage) err
 			logrus.Debugf("Sent a WebSocket message: %s", m)
 		}
 		chAck := wc.pubsub.SubOnce(c.Id)
-		if err := wc.conn.WriteMessage(websocket.TextMessage, []byte(m)); err != nil {
+		if err := wc.Conn.WriteMessage(websocket.TextMessage, []byte(m)); err != nil {
 			return err
 		}
 
@@ -363,7 +363,7 @@ func (wc *WebSocketClient) Unsubscribe(channels ...*WebSocketUnsubscribeMessage)
 		if DebugMode {
 			logrus.Debugf("Sent a WebSocket message: %s", m)
 		}
-		if err := wc.conn.WriteMessage(websocket.TextMessage, []byte(m)); err != nil {
+		if err := wc.Conn.WriteMessage(websocket.TextMessage, []byte(m)); err != nil {
 			return err
 		}
 		//log.Printf("Unsubscribing: %s, %s", c.Id, c.Topic)
@@ -383,6 +383,6 @@ func (wc *WebSocketClient) Unsubscribe(channels ...*WebSocketUnsubscribeMessage)
 // Stop stops subscribing the specified channel, all goroutines quit.
 func (wc *WebSocketClient) Stop() {
 	close(wc.done)
-	_ = wc.conn.Close()
+	_ = wc.Conn.Close()
 	wc.wg.Wait()
 }
