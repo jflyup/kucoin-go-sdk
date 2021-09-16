@@ -348,9 +348,8 @@ func (wc *WebSocketClient) Subscribe(channels ...*WebSocketSubscribeMessage) err
 				logrus.Debugf("Subscribe failed, %s", err.Error())
 			}
 		case <-time.After(wc.timeout):
-			if DebugMode {
-				logrus.Debugf("Wait ack message timeout in %v", wc.timeout)
-			}
+			logrus.Debugf("timeout on response of %s", c.Topic)
+
 		}
 	}
 	return nil
