@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -277,8 +278,9 @@ func (wc *WebSocketClient) read() {
 				// log.Printf("Subscribed: %s==%s? %s", channel.Id, m.Id, channel.Topic)
 				wc.pubsub.Pub(nil, m.Id)
 			case ErrorMessage:
-				wc.errors <- errors.Errorf("Error message: %s", ToJsonString(m))
-				return
+				// wc.errors <- errors.Errorf("Error message: %s", ToJsonString(m))
+				// return
+				log.Printf("Error message: %s", ToJsonString(m))
 			case Message, Notice, Command:
 				wc.messages <- m
 			default:
@@ -340,17 +342,15 @@ func (wc *WebSocketClient) Subscribe(channels ...*WebSocketSubscribeMessage) err
 		}
 
 		//log.Printf("Subscribing: %s, %s", c.Id, c.Topic)
-		select {
-		case <-chAck:
-			//log.Printf("ack: %s=>%s", id, c.Id)
-		case err := <-wc.errors:
-			if DebugMode {
-				logrus.Debugf("Subscribe failed, %s", err.Error())
-			}
-		case <-time.After(wc.timeout):
-			logrus.Debugf("timeout on response of %s", c.Topic)
+		go func(topic string) {
+			select {
+			case <-chAck:
+				//log.Printf("ack: %s=>%s", id, c.Id)
+			case <-time.After(wc.timeout):
+				log.Printf("timeout on response of %s", topic)
 
-		}
+			}
+		}(c.Topic)
 	}
 	return nil
 }
