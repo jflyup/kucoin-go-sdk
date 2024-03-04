@@ -233,6 +233,10 @@ func (ar *ApiResponse) HttpSuccessful() bool {
 	return ar.response.StatusCode == http.StatusOK
 }
 
+func (ar *ApiResponse) HttpStatusCode() int {
+	return ar.response.StatusCode
+}
+
 // ApiSuccessful judges the success of API.
 func (ar *ApiResponse) ApiSuccessful() bool {
 	return ar.Code == ApiSuccess
