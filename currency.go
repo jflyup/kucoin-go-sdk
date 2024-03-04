@@ -43,12 +43,13 @@ func (as *ApiService) Currency(currency string, chain string) (*ApiResponse, err
 // ChainsModel Chains Model
 type ChainsModel struct {
 	ChainName         string `json:"chainName"`
+	Chain             string
 	WithdrawalMinSize string `json:"withdrawalMinSize"`
 	WithdrawalMinFee  string `json:"withdrawalMinFee"`
 	IsWithdrawEnabled bool   `json:"isWithdrawEnabled"`
 	IsDepositEnabled  bool   `json:"isDepositEnabled"`
 	Confirms          int64  `json:"confirms"`
-	ContractAddress   string   `json:"contractAddress"`
+	ContractAddress   string `json:"contractAddress"`
 }
 
 // CurrencyV2Model CurrencyV2 Model
