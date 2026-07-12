@@ -1,8 +1,48 @@
 package kucoin
 
 import (
+	"crypto/tls"
 	"testing"
+
+	"github.com/gorilla/websocket"
 )
+
+func TestNewWebSocketDialerDoesNotMutateDefault(t *testing.T) {
+	original := websocket.DefaultDialer
+	defaultTLSConfig := &tls.Config{ServerName: "default.example"}
+	websocket.DefaultDialer = &websocket.Dialer{
+		ReadBufferSize:  4096,
+		TLSClientConfig: defaultTLSConfig,
+	}
+	defer func() {
+		websocket.DefaultDialer = original
+	}()
+
+	dialer := newWebSocketDialer(true)
+	if dialer == websocket.DefaultDialer {
+		t.Fatal("expected a private WebSocket dialer")
+	}
+	if dialer.ReadBufferSize != webSocketReadBufferSize {
+		t.Fatalf("unexpected read buffer size: got %d, want %d", dialer.ReadBufferSize, webSocketReadBufferSize)
+	}
+	if !dialer.TLSClientConfig.InsecureSkipVerify {
+		t.Fatal("expected TLS verification to be disabled on the private dialer")
+	}
+	if websocket.DefaultDialer.ReadBufferSize != 4096 {
+		t.Fatalf("default read buffer size changed: got %d, want 4096", websocket.DefaultDialer.ReadBufferSize)
+	}
+	if websocket.DefaultDialer.TLSClientConfig != defaultTLSConfig {
+		t.Fatal("default TLS config was replaced")
+	}
+	if websocket.DefaultDialer.TLSClientConfig.InsecureSkipVerify {
+		t.Fatal("default TLS verification setting changed")
+	}
+
+	dialer.TLSClientConfig.ServerName = "private.example"
+	if websocket.DefaultDialer.TLSClientConfig.ServerName != "default.example" {
+		t.Fatal("private dialer shares its TLS config with the default dialer")
+	}
+}
 
 func TestApiService_WebSocketPublicToken(t *testing.T) {
 	s := NewApiServiceFromEnv()

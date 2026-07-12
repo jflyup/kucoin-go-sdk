@@ -161,6 +161,23 @@ type WebSocketClient struct {
 
 var defaultTimeout = time.Second * 5
 
+// webSocketReadBufferSize is intentionally kept per KuCoin connection. Setting
+// it on websocket.DefaultDialer would affect every Gorilla WebSocket connection
+// in the process.
+const webSocketReadBufferSize = 2048000
+
+func newWebSocketDialer(skipVerifyTLS bool) *websocket.Dialer {
+	dialer := *websocket.DefaultDialer
+	if dialer.TLSClientConfig == nil {
+		dialer.TLSClientConfig = &tls.Config{}
+	} else {
+		dialer.TLSClientConfig = dialer.TLSClientConfig.Clone()
+	}
+	dialer.TLSClientConfig.InsecureSkipVerify = skipVerifyTLS
+	dialer.ReadBufferSize = webSocketReadBufferSize
+	return &dialer
+}
+
 // WebSocketClientOpts defines the options for the client
 // during the websocket connection.
 type WebSocketClientOpts struct {
@@ -213,12 +230,9 @@ func (wc *WebSocketClient) Connect() (<-chan *WebSocketDownstreamMessage, <-chan
 	}
 	u := fmt.Sprintf("%s?%s", s.Endpoint, q.Encode())
 
-	// Ignore verify tls
-	websocket.DefaultDialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: wc.skipVerifyTls}
-
 	// Connect ws server
-	websocket.DefaultDialer.ReadBufferSize = 2048000 //2000 kb
-	wc.Conn, _, err = websocket.DefaultDialer.Dial(u, nil)
+	dialer := newWebSocketDialer(wc.skipVerifyTls)
+	wc.Conn, _, err = dialer.Dial(u, nil)
 	if err != nil {
 		return wc.messages, wc.errors, err
 	}
